@@ -42,6 +42,7 @@ resource "aws_db_instance" "this" {
   storage_type                = "gp2"  # Or gp3 for better performance
 
   backup_retention_period     = var.backup_retention_period
+  backup_window     = var.backup_window
   skip_final_snapshot         = false
   final_snapshot_identifier   = "${var.project_name}-db-final-snapshot"
   deletion_protection         = true

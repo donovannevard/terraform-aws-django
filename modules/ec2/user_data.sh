@@ -1,49 +1,18 @@
 #!/bin/bash
-set -e
 
+# Pull and run Docker image (your existing logic)
+docker login -u AWS -p $(aws ecr get-login-password --region ${AWS::Region}) ${ecr_repo_url}
+docker pull ${ecr_repo_url}:latest
+docker run -d -p 8000:8000 --name django-app ${ecr_repo_url}:latest
+# Add Django migrate/collectstatic if needed
+
+# Install and configure CloudWatch Agent
 yum update -y
-yum install -y docker awslogs jq
+yum install -y amazon-cloudwatch-agent
 
-# Start Docker
-service docker start
-usermod -a -G docker ec2-user
-
-# Install docker-compose
-curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
-
-# Install Supervisor
-amazon-linux-extras install python3 -y
-pip3 install supervisor
-
-# CloudWatch Agent
-wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
-rpm -U ./amazon-cloudwatch-agent.rpm
-
-# Basic config placeholder - you can extend later
-cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOF
-{
-  "agent": {
-    "run_as_user": "root"
-  },
-  "logs": {
-    "logs_collected": {
-      "files": {
-        "collect_list": [
-          {
-            "file_path": "/var/log/messages",
-            "log_group_name": "${project_name}-system",
-            "log_stream_name": "{instance_id}"
-          }
-        ]
-      }
-    }
-  }
-}
+# Fetch config from local (or SSM if you add aws_ssm_parameter)
+cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+$(cat cw_agent_config.json)  # Inline your config or copy from Terraform
 EOF
 
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
-
-# Simple message
-echo "Django App EC2 ready! SSH in and deploy your container." > /home/ec2-user/welcome.txt
-chown ec2-user:ec2-user /home/ec2-user/welcome.txt

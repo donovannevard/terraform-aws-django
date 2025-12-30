@@ -81,6 +81,60 @@ resource "aws_lb_target_group_attachment" "app" {
   port             = 8000
 }
 
+# AWS WAFv2 Web ACL - Basic protection with AWS Managed Common Rule Set
+resource "aws_wafv2_web_acl" "app" {
+  name  = "${var.project_name}-waf"
+  scope = "REGIONAL"  # Required for ALB
+
+  default_action {
+    allow {}  # Allow traffic unless a rule blocks it
+  }
+
+  # AWS Managed Rules: Common Rule Set (covers OWASP Top 10 basics, SQLi, XSS, etc.)
+  rule {
+    name     = "AWSManagedCommonRules"
+    priority = 1
+
+    override_action {
+      none {}  # Use the managed rule's built-in action (usually block on match)
+    }
+
+    statement {
+      managed_rule_group_statement {
+        vendor_name = "AWS"
+        name        = "AWSManagedRulesCommonRuleSet"
+
+        # Optional: If a rule is too noisy (rare at start), exclude it like this:
+        # excluded_rule {
+        #   name = "SizeRestrictions_BODY"  # Example
+        # }
+      }
+    }
+
+    visibility_config {
+      sampled_requests_enabled   = true
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.project_name}-common-rules"
+    }
+  }
+
+  # Overall visibility (shows total requests + blocked in CloudWatch)
+  visibility_config {
+    sampled_requests_enabled   = true
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${var.project_name}-waf"
+  }
+
+  tags = var.tags
+}
+
+# Associate the Web ACL with your ALB
+resource "aws_wafv2_web_acl_association" "alb" {
+  resource_arn = aws_lb.app.arn          # ← Replace 'app' with your actual ALB resource name if different
+                                         #    (check your main.tf for the aws_lb resource name)
+  web_acl_arn  = aws_wafv2_web_acl.app.arn
+}
+
 # HTTPS Listener (443) - forward to target group
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.this.arn

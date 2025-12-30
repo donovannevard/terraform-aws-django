@@ -1,3 +1,12 @@
+terraform {
+  cloud {
+    organization = "donovannevard-test"
+    workspaces {
+      name = "donovannevard-test-django"
+    }
+  }
+}
+
 # Data sources for availability zones and AMI lookups
 data "aws_availability_zones" "available" {
   state = "available"
@@ -5,22 +14,6 @@ data "aws_availability_zones" "available" {
 
 data "aws_ssm_parameter" "amzn2_arm_ami" {
   name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2"
-}
-
-# DynamoDB table for Terraform state locking (create if not exists)
-resource "aws_dynamodb_table" "terraform_locks" {
-  name         = "terraform-locks"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  tags = merge(var.tags, {
-    Name = "Terraform Lock Table"
-  })
 }
 
 # === MODULE CALLS ===
@@ -69,13 +62,13 @@ module "nat" {
   depends_on       = [module.vpc]
 }
 
-# 4. Django App EC2 instance
+# 4. Django App EC2 instance (now using ASG/launch template from earlier updates)
 module "ec2" {
   source = "./modules/ec2"
 
-  subnet_id              = module.vpc.public_subnets[0]
+  subnet_id              = module.vpc.public_subnets[0]  # Note: update to private if using ASG private subnets
   app_security_group_id  = module.security_groups.app_sg_id
-  ami_id                 = data.aws_ssm_parameter.amzn2_arm_ami.value  # ARM for t4g instances
+  ami_id                 = data.aws_ssm_parameter.amzn2_arm_ami.value
   instance_type          = var.app_instance_type
   key_name               = var.key_name
   project_name           = var.project_name
@@ -91,7 +84,7 @@ module "alb" {
 
   vpc_id            = module.vpc.vpc_id
   subnet_ids        = module.vpc.public_subnets
-  app_instance_id   = module.ec2.instance_id
+  app_instance_id   = module.ec2.instance_id   # Update this if switching to ASG
   certificate_arn   = module.acm.alb_certificate_arn
   project_name      = var.project_name
   domain_name       = var.domain_name
@@ -107,6 +100,10 @@ module "acm" {
   domain_name       = var.domain_name
   alternative_names = ["www.${var.domain_name}"]
   hosted_zone_id    = var.hosted_zone_id != "" ? var.hosted_zone_id : module.route53.hosted_zone_id
+
+  providers = {
+    aws = aws.us_east_1
+  }
 }
 
 # 7. RDS PostgreSQL
@@ -122,6 +119,8 @@ module "rds" {
   multi_az               = var.enable_multi_az
   project_name           = var.project_name
   tags                   = var.tags
+  backup_retention_period = var.backup_retention_period   # Assuming you have this var
+  backup_window          = var.backup_window              # From your earlier addition
 
   depends_on = [module.vpc, module.security_groups]
 }
@@ -164,7 +163,7 @@ module "secrets" {
 
   db_endpoint     = module.rds.endpoint
   db_username     = var.db_username
-  db_password     = module.rds.password  # Pass the generated password directly
+  db_password     = module.rds.password
   db_name         = var.db_name
   project_name    = var.project_name
   tags            = var.tags
