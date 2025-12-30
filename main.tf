@@ -66,15 +66,15 @@ module "nat" {
 module "ec2" {
   source = "./modules/ec2"
 
-  subnet_id              = module.vpc.public_subnets[0]  # Note: update to private if using ASG private subnets
-  app_security_group_id  = module.security_groups.app_sg_id
+  project_name           = var.project_name
+  tags                   = var.tags
   ami_id                 = data.aws_ssm_parameter.amzn2_arm_ami.value
   instance_type          = var.app_instance_type
-  key_name               = var.key_name
-  project_name           = var.project_name
-  domain_name            = var.domain_name
-  tags                   = var.tags
+  app_security_group_id  = module.security_groups.app_sg_id
+  subnet_id              = module.vpc.private_subnets[0]
+  github_repo            = var.github_repo
 
+  ecr_repo_url           = module.ecr.repository_url
   depends_on = [module.nat, module.security_groups]
 }
 
@@ -93,18 +93,31 @@ module "alb" {
   depends_on = [module.ec2, module.acm, module.vpc]
 }
 
-# 6. ACM Certificate
-module "acm" {
-  source = "./modules/acm"
-  domain_name       = var.domain_name
-  alternative_names = ["www.${var.domain_name}"]
-  hosted_zone_id    = var.hosted_zone_id != "" ? var.hosted_zone_id : module.route53.hosted_zone_id
+resource "aws_autoscaling_attachment" "alb" {
+  autoscaling_group_name = module.ec2.asg_name
+  lb_target_group_arn    = module.alb.target_group_arn
 
-  providers = {
-    aws           = aws             # Default (eu-west-2) for ALB cert
-    aws.us_east_1 = aws.us_east_1   # Alias for CloudFront cert/validation
-  }
+  depends_on = [
+    module.ec2,
+    module.alb
+  ]
 }
+
+# # 6. ACM Certificate
+# module "acm" {
+#   source = "./modules/acm"
+
+#   domain_name       = var.domain_name
+#   alternative_names = ["www.${var.domain_name}"]
+#   hosted_zone_id    = var.hosted_zone_id != "" ? var.hosted_zone_id : module.route53.hosted_zone_id
+
+#   providers = {
+#     aws           = aws
+#     aws.us_east_1 = aws.us_east_1
+#   }
+
+#   depends_on = [module.route53]  # Ensures zone exists before validation
+# }
 
 # 7. RDS PostgreSQL
 module "rds" {
@@ -129,36 +142,47 @@ module "rds" {
 module "s3_cloudfront" {
   source = "./modules/s3-cloudfront"
 
-  # No count anymore → always created
   bucket_name     = "${replace(var.domain_name, ".", "-")}-static-${random_id.bucket_suffix.hex}"
   domain_name     = var.domain_name
-  certificate_arn = module.acm.cloudfront_certificate_arn   # now safe, cycle broken
+  # certificate_arn = module.acm.cloudfront_certificate_arn
   project_name    = var.project_name
   tags            = var.tags
 
-  depends_on = [module.acm]
+  # depends_on = [module.acm, module.route53]
 }
 
 resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
 
-# 9. Route 53
-module "route53" {
-  source = "./modules/route53"
+# 9. SES for transactional emails (order receipts, etc.)
+module "ses" {
+  source = "./modules/ses"
 
-  domain_name       = var.domain_name
-  hosted_zone_id    = var.hosted_zone_id
-  alb_dns_name      = module.alb.dns_name
-  alb_zone_id       = module.alb.zone_id
-  cloudfront_domain = module.s3_cloudfront.cloudfront_domain_name   # always reference it
+  domain_name    = var.domain_name
+  hosted_zone_id = var.hosted_zone_id != "" ? var.hosted_zone_id : module.route53.hosted_zone_id
 
   tags = var.tags
 
-  depends_on = [module.alb, module.s3_cloudfront]
+  depends_on = [module.route53]
 }
 
-# 10. Secrets Manager
+# # 10. Route 53
+# module "route53" {
+#   source = "./modules/route53"
+
+#   domain_name       = var.domain_name
+#   hosted_zone_id    = var.hosted_zone_id
+#   alb_dns_name      = module.alb.dns_name
+#   alb_zone_id       = module.alb.zone_id
+#   cloudfront_domain = module.s3_cloudfront.cloudfront_domain_name  # This is safe now with lifecycle ignore
+
+#   tags = var.tags
+
+#   depends_on = [module.alb]
+# }
+
+# 11. Secrets Manager
 module "secrets" {
   source = "./modules/secrets"
 
@@ -172,7 +196,7 @@ module "secrets" {
   depends_on = [module.rds]
 }
 
-# 11. ECR Repository
+# 12. ECR Repository
 module "ecr" {
   source = "./modules/ecr"
 

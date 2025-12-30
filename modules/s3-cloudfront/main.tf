@@ -85,8 +85,10 @@ resource "aws_cloudfront_distribution" "static" {
   }
 
   viewer_certificate {
-    acm_certificate_arn      = var.certificate_arn
-    ssl_support_method       = "sni-only"
+    # Use ACM cert if provided, otherwise default CloudFront cert
+    acm_certificate_arn      = var.certificate_arn != null ? var.certificate_arn : null
+    cloudfront_default_certificate = var.certificate_arn == null ? true : false
+    ssl_support_method       = var.certificate_arn != null ? "sni-only" : "vip"
     minimum_protocol_version = "TLSv1.2_2021"
   }
 

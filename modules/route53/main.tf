@@ -11,12 +11,8 @@ resource "aws_route53_zone" "this" {
 
 # Use existing or newly created zone ID
 locals {
-  zone_id = var.hosted_zone_id != "" ? var.hosted_zone_id : aws_route53_zone.this[0].zone_id
-}
-
-# CloudFront hosted zone ID (fixed value for all CloudFront distributions)
-locals {
-  cloudfront_zone_id = "Z2FDTNDATAQYW2"
+  zone_id            = var.hosted_zone_id != "" ? var.hosted_zone_id : aws_route53_zone.this[0].zone_id
+  cloudfront_zone_id = "Z2FDTNDATAQYW2"  # Fixed CloudFront hosted zone ID
 }
 
 # A record: apex domain -> CloudFront
@@ -28,15 +24,16 @@ resource "aws_route53_record" "apex" {
   alias {
     name                   = var.cloudfront_domain
     zone_id                = local.cloudfront_zone_id
-    evaluate_target_health = false  # CloudFront does not support target health evaluation
+    evaluate_target_health = false
   }
 
-  depends_on = [
-    aws_acm_certificate_validation.cloudfront  # Ensure validation completes first (if in same module or root)
-  ]
+  # Ignore alias changes after initial creation to break cycle
+  lifecycle {
+    ignore_changes = [alias[0].name, alias[0].zone_id]
+  }
 }
 
-# AAAA record for IPv6 (CloudFront supports it)
+# AAAA record: apex -> CloudFront (IPv6)
 resource "aws_route53_record" "apex_ipv6" {
   zone_id = local.zone_id
   name    = var.domain_name
@@ -48,12 +45,12 @@ resource "aws_route53_record" "apex_ipv6" {
     evaluate_target_health = false
   }
 
-  depends_on = [
-    aws_acm_certificate_validation.cloudfront
-  ]
+  lifecycle {
+    ignore_changes = [alias[0].name, alias[0].zone_id]
+  }
 }
 
-# www -> CloudFront
+# A record: www -> CloudFront
 resource "aws_route53_record" "www" {
   zone_id = local.zone_id
   name    = "www.${var.domain_name}"
@@ -65,12 +62,12 @@ resource "aws_route53_record" "www" {
     evaluate_target_health = false
   }
 
-  depends_on = [
-    aws_acm_certificate_validation.cloudfront
-  ]
+  lifecycle {
+    ignore_changes = [alias[0].name, alias[0].zone_id]
+  }
 }
 
-# IPv6 for www
+# AAAA record: www -> CloudFront (IPv6)
 resource "aws_route53_record" "www_ipv6" {
   zone_id = local.zone_id
   name    = "www.${var.domain_name}"
@@ -82,7 +79,7 @@ resource "aws_route53_record" "www_ipv6" {
     evaluate_target_health = false
   }
 
-  depends_on = [
-    aws_acm_certificate_validation.cloudfront
-  ]
+  lifecycle {
+    ignore_changes = [alias[0].name, alias[0].zone_id]
+  }
 }

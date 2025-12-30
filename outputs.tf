@@ -10,12 +10,12 @@ output "alb_dns_name" {
 
 output "cloudfront_domain" {
   description = "CloudFront distribution domain for static/media files (if enabled)"
-  value       = module.s3_cloudfront[0].cloudfront_domain_name
+  value       = module.s3_cloudfront.cloudfront_domain_name
 }
 
 output "cloudfront_static_url" {
   description = "Base URL for serving static/media files via CloudFront"
-  value       = "https://${module.s3_cloudfront[0].cloudfront_domain_name}"
+  value       = "https://${module.s3_cloudfront.cloudfront_domain_name}"
 }
 
 output "rds_endpoint" {
@@ -41,14 +41,14 @@ output "ec2_public_ip" {
   value       = module.ec2.public_ip
 }
 
-output "nat_instance_id" {
-  description = "Instance ID of the fck-nat instance"
-  value       = module.nat.instance_id
+output "nat_instance_arn" {
+  description = "ARN of the NAT instance"
+  value = module.nat.instance_arn
 }
 
 output "nat_public_ip" {
-  description = "Public IP of the fck-nat instance"
-  value       = module.nat.public_ip
+  description = "Public IP of the NAT instance"
+  value = module.nat.instance_public_ip
 }
 
 output "ecr_repository_url" {
@@ -107,7 +107,7 @@ Deployment complete! Next steps:
    - Retrieve DB credentials from Secrets Manager
    - Set ENVIRONMENT variables (SECRET_KEY, DATABASE_URL, etc.)
    - Run migrations: python manage.py migrate
-   - Collect static: python manage.py collectstatic (to S3 if CloudFront enabled)
+   - Collect static: python manage.py collectstatic
 
 5. Test: Visit https://${var.domain_name}
 

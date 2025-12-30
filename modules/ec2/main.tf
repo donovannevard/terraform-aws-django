@@ -1,19 +1,4 @@
-# Latest Amazon Linux 2 ARM64 AMI (dynamic lookup via SSM for reproducibility)
-data "aws_ssm_parameter" "amzn2_ami_arm" {
-  name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2"
-}
-
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-  owners      = ["amazon"]
-
-  filter {
-    name   = "image-id"
-    values = [data.aws_ssm_parameter.amzn2_ami_arm.value]
-  }
-}
-
-# IAM Role for EC2 (ECR pull, SSM for access/deploy, Secrets Manager for Django creds, CloudWatch Agent)
+# IAM Role for EC2 instances (ECR pull, SSM, Secrets Manager, CloudWatch Agent)
 resource "aws_iam_role" "app" {
   name = "${var.project_name}-app-role"
 
@@ -30,14 +15,28 @@ resource "aws_iam_role" "app" {
     ]
   })
 
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",  # ECR pull
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",       # SSM Session Manager
-    "arn:aws:iam::aws:policy/SecretsManagerReadWrite",            # Django secrets
-    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"         # CloudWatch metrics/logs
-  ]
-
   tags = var.tags
+}
+
+# Attach policies separately (replaces deprecated managed_policy_arns)
+resource "aws_iam_role_policy_attachment" "ecr_read" {
+  role       = aws_iam_role.app.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.app.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "secrets" {
+  role       = aws_iam_role.app.name
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+}
+
+resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
+  role       = aws_iam_role.app.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
 resource "aws_iam_instance_profile" "app" {
@@ -45,27 +44,33 @@ resource "aws_iam_instance_profile" "app" {
   role = aws_iam_role.app.name
 }
 
-# EC2 Launch Template
+# Launch Template for ASG instances
 resource "aws_launch_template" "app" {
-  name_prefix   = "${var.project_name}-template-"
-  image_id      = data.aws_ami.amazon_linux.id
-  instance_type = var.app_instance_type
-  # key_name      = aws_key_pair.app.key_name  # Comment out after testing SSM - no need for SSH keys
+  name_prefix   = "${var.project_name}-lt-"
+  image_id      = var.ami_id
+  instance_type = var.instance_type
 
-  vpc_security_group_ids = [aws_security_group.app.id]
-
-  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    ecr_repo_url = aws_ecr_repository.app.repository_url
-    # Add Django env vars here (e.g., secrets_manager_arn = aws_secretsmanager_secret.django.arn)
-  }))
+  vpc_security_group_ids = [var.app_security_group_id]
 
   iam_instance_profile {
     name = aws_iam_instance_profile.app.name
   }
 
+  # Remove key_name if using SSM (recommended)
+  # key_name = var.key_name
+
+  user_data = base64encode(templatefile("${path.module}/user_data.sh", {
+    ecr_repo_url = var.ecr_repo_url
+    # Add any other env vars (secrets manager ARN, etc.)
+  }))
+
   tag_specifications {
     resource_type = "instance"
-    tags          = var.tags
+    tags          = merge(var.tags, { Name = "${var.project_name}-app-instance" })
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -76,17 +81,12 @@ resource "aws_autoscaling_group" "app" {
   max_size            = 3
   desired_capacity    = 1
   health_check_type   = "ELB"
-  target_group_arns   = [aws_lb_target_group.app.arn]
 
-  vpc_zone_identifier = aws_subnet.private.*.id  # Your private subnets
+  vpc_zone_identifier = [var.subnet_id]  # Private subnet preferred
 
   launch_template {
     id      = aws_launch_template.app.id
     version = "$Latest"
-  }
-
-  lifecycle {
-    create_before_destroy = true
   }
 
   tag {
@@ -98,7 +98,7 @@ resource "aws_autoscaling_group" "app" {
   tags = var.tags
 }
 
-# Scale-Out Policy and Alarm (High CPU)
+# Scale out policy (high CPU)
 resource "aws_autoscaling_policy" "scale_out" {
   name                   = "${var.project_name}-scale-out"
   scaling_adjustment     = 1
@@ -120,10 +120,9 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.app.name
   }
-  tags = var.tags
 }
 
-# Scale-In Policy and Alarm (Low CPU)
+# Scale in policy (low CPU)
 resource "aws_autoscaling_policy" "scale_in" {
   name                   = "${var.project_name}-scale-in"
   scaling_adjustment     = -1
@@ -145,18 +144,18 @@ resource "aws_cloudwatch_metric_alarm" "low_cpu" {
   dimensions = {
     AutoScalingGroupName = aws_autoscaling_group.app.name
   }
-  tags = var.tags
 }
 
-# GitHub OIDC for CI/CD (add role ARN to deploy.yaml)
+# GitHub OIDC (for CI/CD deploy role)
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]  # GitHub's current thumbprint (verify if needed)
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
 }
 
 resource "aws_iam_role" "github_actions" {
   name = "${var.project_name}-github-actions-role"
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -174,5 +173,5 @@ resource "aws_iam_role" "github_actions" {
 
 resource "aws_iam_role_policy_attachment" "github_deploy" {
   role       = aws_iam_role.github_actions.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"  # TODO: Narrow to ECR push, SSM commands, ASG refresh
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"  # Narrow this later
 }

@@ -85,6 +85,18 @@ variable "db_allocated_storage" {
   default     = 20
 }
 
+variable "backup_retention_period" {
+  description = "Number of days to retain automated RDS backups"
+  type        = number
+  default     = 7
+}
+
+variable "backup_window" {
+  description = "Daily time range for automated backups (UTC)"
+  type        = string
+  default     = "03:00-04:00"
+}
+
 variable "db_name" {
   description = "Name of the PostgreSQL database"
   type        = string
@@ -116,4 +128,10 @@ variable "tags" {
     ManagedBy = "Terraform"
     Project   = "Django E-Commerce"
   }
+}
+
+variable "github_repo" {
+  description = "GitHub repository for OIDC (e.g. donovannevard/django-app)"
+  type        = string
+  default     = "donovannevard/django-app"  # change to your actual repo
 }
