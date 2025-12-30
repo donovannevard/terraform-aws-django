@@ -10,12 +10,12 @@ output "alb_dns_name" {
 
 output "cloudfront_domain" {
   description = "CloudFront distribution domain for static/media files (if enabled)"
-  value       = var.cloudfront_enabled ? module.s3_cloudfront[0].cloudfront_domain_name : "CloudFront disabled"
+  value       = module.s3_cloudfront[0].cloudfront_domain_name
 }
 
 output "cloudfront_static_url" {
   description = "Base URL for serving static/media files via CloudFront"
-  value       = var.cloudfront_enabled ? "https://${module.s3_cloudfront[0].cloudfront_domain_name}" : "N/A - Use Django's local static serving"
+  value       = "https://${module.s3_cloudfront[0].cloudfront_domain_name}"
 }
 
 output "rds_endpoint" {

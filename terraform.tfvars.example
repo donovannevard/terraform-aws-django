@@ -17,7 +17,6 @@ db_name            = "shopdb"
 db_username        = "shopadmin"
 
 enable_multi_az    = true                       # Keep true for production
-cloudfront_enabled = true                       # Highly recommended for performance
 
 # Optional overrides
 # ecr_repository_name = "custom-repo-name"

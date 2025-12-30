@@ -103,12 +103,6 @@ variable "enable_multi_az" {
   default     = true
 }
 
-variable "cloudfront_enabled" {
-  description = "Enable CloudFront + S3 for static/media files"
-  type        = bool
-  default     = true
-}
-
 variable "acm_alternative_names" {
   description = "Additional names for the SSL certificate. We set this to include www automatically."
   type        = list(string)

@@ -20,13 +20,12 @@ variable "alb_zone_id" {
 }
 
 variable "cloudfront_domain" {
-  description = "CloudFront distribution domain name (for www redirect if enabled). Leave empty to disable CloudFront alias."
+  description = "Domain name of the CloudFront distribution (required)"
   type        = string
-  default     = ""
 }
 
 variable "cloudfront_zone_id" {
-  description = "CloudFront hosted zone ID (always Z2FDTNDATAQYW2)"
+  description = "Hosted zone ID for CloudFront (optional, defaults to fixed value)"
   type        = string
   default     = "Z2FDTNDATAQYW2"
 }

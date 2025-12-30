@@ -73,7 +73,6 @@ ssh_allowed_cidr  = "203.0.113.42/32"             # ← YOUR public IP (get from
 # app_instance_type = "t4g.medium"
 # nat_instance_type = "t4g.nano"
 # db_instance_class = "db.t4g.small"
-# cloudfront_enabled = true
 ```
 
 ## Deploy

@@ -14,56 +14,75 @@ locals {
   zone_id = var.hosted_zone_id != "" ? var.hosted_zone_id : aws_route53_zone.this[0].zone_id
 }
 
-# A record: apex domain -> ALB
-resource "aws_route53_record" "apex_alb" {
+# CloudFront hosted zone ID (fixed value for all CloudFront distributions)
+locals {
+  cloudfront_zone_id = "Z2FDTNDATAQYW2"
+}
+
+# A record: apex domain -> CloudFront
+resource "aws_route53_record" "apex" {
   zone_id = local.zone_id
   name    = var.domain_name
   type    = "A"
 
   alias {
-    name                   = var.alb_dns_name
-    zone_id                = var.alb_zone_id
-    evaluate_target_health = true
+    name                   = var.cloudfront_domain
+    zone_id                = local.cloudfront_zone_id
+    evaluate_target_health = false  # CloudFront does not support target health evaluation
   }
+
+  depends_on = [
+    aws_acm_certificate_validation.cloudfront  # Ensure validation completes first (if in same module or root)
+  ]
 }
 
-# AAAA record for IPv6 (ALB supports it)
-resource "aws_route53_record" "apex_alb_ipv6" {
+# AAAA record for IPv6 (CloudFront supports it)
+resource "aws_route53_record" "apex_ipv6" {
   zone_id = local.zone_id
   name    = var.domain_name
   type    = "AAAA"
 
   alias {
-    name                   = var.alb_dns_name
-    zone_id                = var.alb_zone_id
-    evaluate_target_health = true
+    name                   = var.cloudfront_domain
+    zone_id                = local.cloudfront_zone_id
+    evaluate_target_health = false
   }
+
+  depends_on = [
+    aws_acm_certificate_validation.cloudfront
+  ]
 }
 
-# Optional: www -> ALB (if no CloudFront) or www -> CloudFront
+# www -> CloudFront
 resource "aws_route53_record" "www" {
-  count   = var.cloudfront_domain != "" ? 1 : 1  # Always create www record
   zone_id = local.zone_id
   name    = "www.${var.domain_name}"
   type    = "A"
 
   alias {
-    name                   = var.cloudfront_domain != "" ? var.cloudfront_domain : var.alb_dns_name
-    zone_id                = var.cloudfront_domain != "" ? var.cloudfront_zone_id : var.alb_zone_id
-    evaluate_target_health = true
+    name                   = var.cloudfront_domain
+    zone_id                = local.cloudfront_zone_id
+    evaluate_target_health = false
   }
+
+  depends_on = [
+    aws_acm_certificate_validation.cloudfront
+  ]
 }
 
-# Optional: IPv6 for www
+# IPv6 for www
 resource "aws_route53_record" "www_ipv6" {
-  count   = var.cloudfront_domain != "" ? 1 : 1
   zone_id = local.zone_id
   name    = "www.${var.domain_name}"
   type    = "AAAA"
 
   alias {
-    name                   = var.cloudfront_domain != "" ? var.cloudfront_domain : var.alb_dns_name
-    zone_id                = var.cloudfront_domain != "" ? var.cloudfront_zone_id : var.alb_zone_id
-    evaluate_target_health = true
+    name                   = var.cloudfront_domain
+    zone_id                = local.cloudfront_zone_id
+    evaluate_target_health = false
   }
+
+  depends_on = [
+    aws_acm_certificate_validation.cloudfront
+  ]
 }

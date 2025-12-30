@@ -96,13 +96,13 @@ module "alb" {
 # 6. ACM Certificate
 module "acm" {
   source = "./modules/acm"
-
   domain_name       = var.domain_name
   alternative_names = ["www.${var.domain_name}"]
   hosted_zone_id    = var.hosted_zone_id != "" ? var.hosted_zone_id : module.route53.hosted_zone_id
 
   providers = {
-    aws = aws.us_east_1
+    aws           = aws             # Default (eu-west-2) for ALB cert
+    aws.us_east_1 = aws.us_east_1   # Alias for CloudFront cert/validation
   }
 }
 
@@ -129,10 +129,10 @@ module "rds" {
 module "s3_cloudfront" {
   source = "./modules/s3-cloudfront"
 
-  count           = var.cloudfront_enabled ? 1 : 0
+  # No count anymore → always created
   bucket_name     = "${replace(var.domain_name, ".", "-")}-static-${random_id.bucket_suffix.hex}"
   domain_name     = var.domain_name
-  certificate_arn = module.acm.cloudfront_certificate_arn
+  certificate_arn = module.acm.cloudfront_certificate_arn   # now safe, cycle broken
   project_name    = var.project_name
   tags            = var.tags
 
@@ -151,8 +151,9 @@ module "route53" {
   hosted_zone_id    = var.hosted_zone_id
   alb_dns_name      = module.alb.dns_name
   alb_zone_id       = module.alb.zone_id
-  cloudfront_domain = var.cloudfront_enabled ? module.s3_cloudfront[0].cloudfront_domain_name : ""
-  tags              = var.tags
+  cloudfront_domain = module.s3_cloudfront.cloudfront_domain_name   # always reference it
+
+  tags = var.tags
 
   depends_on = [module.alb, module.s3_cloudfront]
 }
