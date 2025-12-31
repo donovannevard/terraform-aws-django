@@ -21,12 +21,6 @@ variable "domain_name" {
   type        = string
 }
 
-variable "hosted_zone_id" {
-  description = "Existing Route 53 Hosted Zone ID for the domain. Leave empty to create a new zone."
-  type        = string
-  default     = ""
-}
-
 variable "key_name" {
   description = "Name of an existing EC2 Key Pair for SSH access to app and fck-nat instances (optional but recommended for debugging)"
   type        = string

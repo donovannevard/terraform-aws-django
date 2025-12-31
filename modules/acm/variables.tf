@@ -9,12 +9,6 @@ variable "alternative_names" {
   default     = []
 }
 
-variable "hosted_zone_id" {
-  description = "Route 53 hosted zone ID for DNS validation. If empty, validation records won't be created (manual validation needed)."
-  type        = string
-  default     = ""
-}
-
 variable "tags" {
   description = "Tags to apply to certificates"
   type        = map(string)

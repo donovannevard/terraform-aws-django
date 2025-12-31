@@ -3,12 +3,6 @@ variable "domain_name" {
   type        = string
 }
 
-variable "hosted_zone_id" {
-  description = "Existing Route 53 hosted zone ID (optional)"
-  type        = string
-  default     = ""
-}
-
 variable "alb_dns_name" {
   description = "DNS name of the ALB"
   type        = string

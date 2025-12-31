@@ -14,7 +14,7 @@ resource "aws_acm_certificate" "alb" {
   }
 }
 
-# DNS validation records for ALB cert (only if hosted_zone_id provided)
+# DNS validation records for ALB cert
 resource "aws_route53_record" "alb_validation" {
   zone_id = module.route53.zone_id   # ← reference the output from route53 module
   name    = aws_acm_certificate.alb.domain_validation_options[0].resource_record_name

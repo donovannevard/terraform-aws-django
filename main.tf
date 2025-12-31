@@ -160,7 +160,7 @@ module "ses" {
   source = "./modules/ses"
 
   domain_name    = var.domain_name
-  hosted_zone_id = module.route53.zone_id
+  hosted_zone_id = module.route53.hosted_zone_id
 
   tags = var.tags
 
