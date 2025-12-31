@@ -109,7 +109,7 @@ module "acm" {
 
   domain_name       = var.domain_name
   alternative_names = ["www.${var.domain_name}"]
-  hosted_zone_id    = var.hosted_zone_id != "" ? var.hosted_zone_id : module.route53.hosted_zone_id
+  hosted_zone_id    = module.route53.hosted_zone_id
 
   providers = {
     aws           = aws
@@ -160,7 +160,7 @@ module "ses" {
   source = "./modules/ses"
 
   domain_name    = var.domain_name
-  hosted_zone_id = var.hosted_zone_id != "" ? var.hosted_zone_id : null
+  hosted_zone_id = module.route53.zone_id
 
   tags = var.tags
 
@@ -171,15 +171,14 @@ module "ses" {
 module "route53" {
   source = "./modules/route53"
 
-  domain_name       = var.domain_name
-  hosted_zone_id    = var.hosted_zone_id
+  domain_name  = var.domain_name
   alb_dns_name      = module.alb.dns_name
   alb_zone_id       = module.alb.zone_id
-  cloudfront_domain = module.s3_cloudfront.cloudfront_domain_name  # This is safe now with lifecycle ignore
+  cloudfront_domain = module.s3_cloudfront.cloudfront_domain_name
 
   tags = var.tags
 
-  depends_on = [module.alb]
+  depends_on = [module.alb, module.s3_cloudfront]
 }
 
 # 11. Secrets Manager

@@ -1,7 +1,4 @@
-# Create new hosted zone if no existing ID provided
 resource "aws_route53_zone" "this" {
-  count = var.hosted_zone_id == "" ? 1 : 0
-
   name = var.domain_name
 
   tags = merge(var.tags, {
@@ -9,10 +6,9 @@ resource "aws_route53_zone" "this" {
   })
 }
 
-# Use existing or newly created zone ID
 locals {
-  zone_id            = var.hosted_zone_id != "" ? var.hosted_zone_id : aws_route53_zone.this[0].zone_id
-  cloudfront_zone_id = "Z2FDTNDATAQYW2"  # Fixed CloudFront hosted zone ID
+  zone_id            = aws_route53_zone.this.zone_id
+  cloudfront_zone_id = "Z2FDTNDATAQYW2"
 }
 
 # A record: apex domain -> CloudFront

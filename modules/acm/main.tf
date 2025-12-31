@@ -16,20 +16,11 @@ resource "aws_acm_certificate" "alb" {
 
 # DNS validation records for ALB cert (only if hosted_zone_id provided)
 resource "aws_route53_record" "alb_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.alb.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
-    }
-  }
-
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = var.hosted_zone_id
+  zone_id = module.route53.zone_id   # ← reference the output from route53 module
+  name    = aws_acm_certificate.alb.domain_validation_options[0].resource_record_name
+  type    = aws_acm_certificate.alb.domain_validation_options[0].resource_record_type
+  records = [aws_acm_certificate.alb.domain_validation_options[0].resource_record_value]
+  ttl     = 60
 }
 
 # Wait for ALB cert validation
@@ -58,20 +49,11 @@ resource "aws_acm_certificate" "cloudfront" {
 
 # DNS validation records for CloudFront cert (same zone, reusable)
 resource "aws_route53_record" "cloudfront_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.cloudfront.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
-    }
-  }
-
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = var.hosted_zone_id
+  zone_id = module.route53.zone_id
+  name    = aws_acm_certificate.cloudfront.domain_validation_options[0].resource_record_name
+  type    = aws_acm_certificate.cloudfront.domain_validation_options[0].resource_record_type
+  records = [aws_acm_certificate.cloudfront.domain_validation_options[0].resource_record_value]
+  ttl     = 60
 }
 
 # Wait for CloudFront cert validation

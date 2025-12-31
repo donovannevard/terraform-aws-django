@@ -61,6 +61,16 @@ output "asg_name" {
   value       = module.ec2.asg_name
 }
 
+output "route53_hosted_zone_id" {
+  description = "ID of the created Route 53 hosted zone"
+  value       = module.route53.zone_id
+}
+
+output "route53_name_servers" {
+  description = "Name servers to copy to GoDaddy for delegation"
+  value       = module.route53.name_servers
+}
+
 output "launch_template_id" {
   value = module.ec2.launch_template_id
 }
