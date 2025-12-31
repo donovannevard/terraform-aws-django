@@ -130,8 +130,7 @@ resource "aws_wafv2_web_acl" "app" {
 
 # Associate the Web ACL with your ALB
 resource "aws_wafv2_web_acl_association" "alb" {
-  resource_arn = aws_lb.app.arn          # ← Replace 'app' with your actual ALB resource name if different
-                                         #    (check your main.tf for the aws_lb resource name)
+  resource_arn = aws_lb.this.arn
   web_acl_arn  = aws_wafv2_web_acl.app.arn
 }
 
