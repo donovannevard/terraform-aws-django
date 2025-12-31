@@ -25,7 +25,7 @@ resource "aws_route53_record" "apex" {
   }
 
   lifecycle {
-    ignore_changes = [alias[0].name, alias[0].zone_id]
+    ignore_changes = [alias]
   }
 }
 
@@ -42,7 +42,7 @@ resource "aws_route53_record" "apex_ipv6" {
   }
 
   lifecycle {
-    ignore_changes = [alias[0].name, alias[0].zone_id]
+    ignore_changes = [alias]
   }
 }
 
@@ -59,7 +59,7 @@ resource "aws_route53_record" "www" {
   }
 
   lifecycle {
-    ignore_changes = [alias[0].name, alias[0].zone_id]
+    ignore_changes = [alias]
   }
 }
 
@@ -76,6 +76,6 @@ resource "aws_route53_record" "www_ipv6" {
   }
 
   lifecycle {
-    ignore_changes = [alias[0].name, alias[0].zone_id]
+    ignore_changes = [alias]
   }
 }
