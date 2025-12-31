@@ -11,7 +11,7 @@ terraform {
 resource "aws_acm_certificate" "alb" {
   domain_name               = var.domain_name
   subject_alternative_names = var.alternative_names
-  validation_method         = "EMAIL"  # Email validation - no DNS records needed
+  validation_method         = "EMAIL"
 
   tags = merge(var.tags, {
     Name = "alb-cert"

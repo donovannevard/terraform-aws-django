@@ -109,14 +109,14 @@ module "acm" {
 
   domain_name       = var.domain_name
   alternative_names = ["www.${var.domain_name}"]
-  hosted_zone_id    = module.route53.hosted_zone_id
+  hosted_zone_id    = module.route53_zone.zone_id
 
   providers = {
     aws           = aws
     aws.us_east_1 = aws.us_east_1
   }
 
-  depends_on = [module.route53]
+  depends_on = [module.route53_zone]
 }
 
 # 7. RDS PostgreSQL
@@ -148,7 +148,7 @@ module "s3_cloudfront" {
   project_name    = var.project_name
   tags            = var.tags
 
-  depends_on = [module.acm, module.route53]
+  depends_on = [module.acm]
 }
 
 resource "random_id" "bucket_suffix" {
@@ -160,25 +160,31 @@ module "ses" {
   source = "./modules/ses"
 
   domain_name    = var.domain_name
-  hosted_zone_id = module.route53.hosted_zone_id
+  hosted_zone_id = module.route53_zone.zone_id
 
   tags = var.tags
 
-  depends_on = [module.route53]
+  depends_on = [module.route53_zone]
 }
 
 # 10. Route 53
-module "route53" {
-  source = "./modules/route53"
+module "route53_zone" {
+  source = "./modules/route53-zone"
 
-  domain_name  = var.domain_name
-  alb_dns_name      = module.alb.dns_name
-  alb_zone_id       = module.alb.zone_id
+  domain_name = var.domain_name
+  tags        = var.tags
+}
+
+module "route53_aliases" {
+source = "./modules/route53-aliases"
+
+  zone_id           = module.route53_zone.zone_id
+  domain_name       = var.domain_name
   cloudfront_domain = module.s3_cloudfront.cloudfront_domain_name
 
   tags = var.tags
 
-  depends_on = [module.alb, module.s3_cloudfront]
+  depends_on = [module.s3_cloudfront, module.alb]
 }
 
 # 11. Secrets Manager

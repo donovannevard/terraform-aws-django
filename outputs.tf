@@ -63,12 +63,12 @@ output "asg_name" {
 
 output "route53_hosted_zone_id" {
   description = "ID of the created Route 53 hosted zone"
-  value       = module.route53.zone_id
+  value       = module.route53_zone.zone_id
 }
 
 output "route53_name_servers" {
   description = "Name servers to copy to GoDaddy for delegation"
-  value       = module.route53.name_servers
+  value       = module.route53_zone.name_servers
 }
 
 output "launch_template_id" {
@@ -84,7 +84,6 @@ CI/CD Setup Instructions:
    - Add Variables (not secrets):
      ECR_REPO_NAME = ${module.ecr.repository_name}
      ECR_REGISTRY   = ${module.ecr.registry_id}.dkr.ecr.${var.aws_region}.amazonaws.com
-     EC2_INSTANCE_ID = ${module.ec2.instance_id}
      AWS_REGION = ${var.aws_region}
 
    - Add Secrets:
