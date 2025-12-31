@@ -89,13 +89,23 @@ resource "aws_autoscaling_group" "app" {
     version = "$Latest"
   }
 
+  # Tags for the ASG itself (not propagated to instances)
   tag {
     key                 = "Name"
-    value               = "${var.project_name}-app"
-    propagate_at_launch = true
+    value               = "${var.project_name}-asg"
+    propagate_at_launch = false
   }
 
-  tags = var.tags
+  # Tags propagated to launched instances
+  dynamic "tag" {
+    for_each = var.tags
+
+    content {
+      key                 = tag.key
+      value               = tag.value
+      propagate_at_launch = true
+    }
+  }
 }
 
 # Scale out policy (high CPU)

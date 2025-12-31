@@ -36,11 +36,6 @@ output "django_secret_key_arn" {
   sensitive   = true
 }
 
-output "ec2_public_ip" {
-  description = "Public IP of the Django app EC2 instance (for SSH/debug)"
-  value       = module.ec2.public_ip
-}
-
 output "nat_instance_arn" {
   description = "ARN of the NAT instance"
   value = module.nat.instance_arn
@@ -61,9 +56,13 @@ output "ecr_repository_name" {
   value       = module.ecr.repository_name
 }
 
-output "EC2_INSTANCE_ID" {
-  description = "EC2 Instance ID of the Django app (for GitHub Actions SSM deploy)"
-  value       = module.ec2.instance_id
+output "asg_name" {
+  description = "Auto Scaling Group name"
+  value       = module.ec2.asg_name
+}
+
+output "launch_template_id" {
+  value = module.ec2.launch_template_id
 }
 
 output "ci_cd_instructions" {
@@ -90,27 +89,11 @@ EOT
 }
 
 output "next_steps" {
-  description = "What to do after deployment"
   value = <<EOT
-Deployment complete! Next steps:
+To access the instance via SSM (no SSH key needed):
+aws ssm start-session --target <instance-id>  # get instance-id from AWS console or ASG instances
 
-1. DNS: Point your domain (${var.domain_name}) to the ALB via Route 53 (records created automatically if new zone).
-
-2. SSH into app instance:
-   ssh -i your-key.pem ec2-user@${module.ec2.public_ip}
-
-3. Deploy your Docker image:
-   - Build & push to ECR (or build on-instance)
-   - Pull and run your container with supervisor (Gunicorn + Celery)
-
-4. Django setup:
-   - Retrieve DB credentials from Secrets Manager
-   - Set ENVIRONMENT variables (SECRET_KEY, DATABASE_URL, etc.)
-   - Run migrations: python manage.py migrate
-   - Collect static: python manage.py collectstatic
-
-5. Test: Visit https://${var.domain_name}
-
-Monitor via CloudWatch dashboards/alarms (create manually or extend later).
+# Or if you have public IP enabled (not recommended):
+ssh -i your-key.pem ec2-user@<public-ip>
 EOT
 }

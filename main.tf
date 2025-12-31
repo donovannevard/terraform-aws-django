@@ -90,7 +90,7 @@ module "alb" {
   domain_name       = var.domain_name
   tags              = var.tags
 
-  depends_on = [module.ec2, module.acm, module.vpc]
+  depends_on = [module.ec2, module.vpc]
 }
 
 resource "aws_autoscaling_attachment" "alb" {
@@ -103,21 +103,21 @@ resource "aws_autoscaling_attachment" "alb" {
   ]
 }
 
-# # 6. ACM Certificate
-# module "acm" {
-#   source = "./modules/acm"
+# 6. ACM Certificate
+module "acm" {
+  source = "./modules/acm"
 
-#   domain_name       = var.domain_name
-#   alternative_names = ["www.${var.domain_name}"]
-#   hosted_zone_id    = var.hosted_zone_id != "" ? var.hosted_zone_id : module.route53.hosted_zone_id
+  domain_name       = var.domain_name
+  alternative_names = ["www.${var.domain_name}"]
+  hosted_zone_id    = var.hosted_zone_id != "" ? var.hosted_zone_id : module.route53.hosted_zone_id
 
-#   providers = {
-#     aws           = aws
-#     aws.us_east_1 = aws.us_east_1
-#   }
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
 
-#   depends_on = [module.route53]  # Ensures zone exists before validation
-# }
+  depends_on = [module.route53]
+}
 
 # 7. RDS PostgreSQL
 module "rds" {
@@ -132,8 +132,8 @@ module "rds" {
   multi_az               = var.enable_multi_az
   project_name           = var.project_name
   tags                   = var.tags
-  backup_retention_period = var.backup_retention_period   # Assuming you have this var
-  backup_window          = var.backup_window              # From your earlier addition
+  backup_retention_period = var.backup_retention_period
+  backup_window          = var.backup_window
 
   depends_on = [module.vpc, module.security_groups]
 }
@@ -144,11 +144,11 @@ module "s3_cloudfront" {
 
   bucket_name     = "${replace(var.domain_name, ".", "-")}-static-${random_id.bucket_suffix.hex}"
   domain_name     = var.domain_name
-  # certificate_arn = module.acm.cloudfront_certificate_arn
+  certificate_arn = module.acm.cloudfront_certificate_arn
   project_name    = var.project_name
   tags            = var.tags
 
-  # depends_on = [module.acm, module.route53]
+  depends_on = [module.acm, module.route53]
 }
 
 resource "random_id" "bucket_suffix" {
@@ -160,27 +160,27 @@ module "ses" {
   source = "./modules/ses"
 
   domain_name    = var.domain_name
-  hosted_zone_id = var.hosted_zone_id != "" ? var.hosted_zone_id : module.route53.hosted_zone_id
+  hosted_zone_id = var.hosted_zone_id != "" ? var.hosted_zone_id : null
 
   tags = var.tags
 
   depends_on = [module.route53]
 }
 
-# # 10. Route 53
-# module "route53" {
-#   source = "./modules/route53"
+# 10. Route 53
+module "route53" {
+  source = "./modules/route53"
 
-#   domain_name       = var.domain_name
-#   hosted_zone_id    = var.hosted_zone_id
-#   alb_dns_name      = module.alb.dns_name
-#   alb_zone_id       = module.alb.zone_id
-#   cloudfront_domain = module.s3_cloudfront.cloudfront_domain_name  # This is safe now with lifecycle ignore
+  domain_name       = var.domain_name
+  hosted_zone_id    = var.hosted_zone_id
+  alb_dns_name      = module.alb.dns_name
+  alb_zone_id       = module.alb.zone_id
+  cloudfront_domain = module.s3_cloudfront.cloudfront_domain_name  # This is safe now with lifecycle ignore
 
-#   tags = var.tags
+  tags = var.tags
 
-#   depends_on = [module.alb]
-# }
+  depends_on = [module.alb]
+}
 
 # 11. Secrets Manager
 module "secrets" {

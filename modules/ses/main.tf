@@ -1,8 +1,6 @@
 # SES Domain Identity
 resource "aws_ses_domain_identity" "main" {
   domain = var.domain_name
-
-  tags = var.tags
 }
 
 # SES DKIM (generates 3 CNAME records)
