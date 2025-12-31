@@ -84,6 +84,7 @@ module "alb" {
 
   vpc_id            = module.vpc.vpc_id
   subnet_ids        = module.vpc.public_subnets
+  autoscaling_group_name  = module.ec2.asg_name
   project_name      = var.project_name
   domain_name       = var.domain_name
   tags              = var.tags
@@ -176,6 +177,8 @@ source = "./modules/route53-aliases"
   zone_id           = module.route53_zone.zone_id
   domain_name       = var.domain_name
   cloudfront_domain = module.s3_cloudfront.cloudfront_domain_name
+  alb_dns_name      = module.alb.dns_name
+  alb_zone_id       = module.alb.zone_id
 
   tags = var.tags
 

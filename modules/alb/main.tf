@@ -74,11 +74,10 @@ resource "aws_lb_target_group" "app" {
   })
 }
 
-# Attach the single EC2 instance to the target group
-resource "aws_lb_target_group_attachment" "app" {
-  target_group_arn = aws_lb_target_group.app.arn
-  target_id        = var.app_instance_id
-  port             = 8000
+# Attach the ASG to the ALB target group (correct for Auto Scaling Group)
+resource "aws_autoscaling_attachment" "app" {
+  autoscaling_group_name = var.autoscaling_group_name
+  lb_target_group_arn    = aws_lb_target_group.app.arn
 }
 
 # AWS WAFv2 Web ACL - Basic protection with AWS Managed Common Rule Set

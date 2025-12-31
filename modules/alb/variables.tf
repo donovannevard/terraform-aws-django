@@ -36,3 +36,8 @@ variable "certificate_arn" {
   type        = string
   default     = null
 }
+
+variable "autoscaling_group_name" {
+  description = "Name of the Auto Scaling Group to attach to the target group"
+  type        = string
+}
