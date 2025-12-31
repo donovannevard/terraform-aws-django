@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
+  }
+}
+
 # Certificate for ALB - in the same region as everything else (eu-west-2 by default)
 resource "aws_acm_certificate" "alb" {
   domain_name               = var.domain_name
