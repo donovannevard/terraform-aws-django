@@ -3,6 +3,11 @@ variable "domain_name" {
   type        = string
 }
 
+variable "hosted_zone_id" {
+  description = "Route 53 hosted zone ID for DNS validation records"
+  type        = string
+}
+
 variable "alternative_names" {
   description = "Additional SANs (e.g., ['www.mydjangoapp.co.uk'] if primary is apex)"
   type        = list(string)

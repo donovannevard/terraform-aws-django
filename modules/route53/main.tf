@@ -11,7 +11,6 @@ locals {
   cloudfront_zone_id = "Z2FDTNDATAQYW2"
 }
 
-# A record: apex domain -> CloudFront
 resource "aws_route53_record" "apex" {
   zone_id = local.zone_id
   name    = var.domain_name
@@ -23,13 +22,11 @@ resource "aws_route53_record" "apex" {
     evaluate_target_health = false
   }
 
-  # Ignore alias changes after initial creation to break cycle
   lifecycle {
-    ignore_changes = [alias[0].name, alias[0].zone_id]
+    ignore_changes = [alias[0].name, alias[0].zone_id]  # Break cycle on first apply
   }
 }
 
-# AAAA record: apex -> CloudFront (IPv6)
 resource "aws_route53_record" "apex_ipv6" {
   zone_id = local.zone_id
   name    = var.domain_name
@@ -46,7 +43,6 @@ resource "aws_route53_record" "apex_ipv6" {
   }
 }
 
-# A record: www -> CloudFront
 resource "aws_route53_record" "www" {
   zone_id = local.zone_id
   name    = "www.${var.domain_name}"
@@ -63,7 +59,6 @@ resource "aws_route53_record" "www" {
   }
 }
 
-# AAAA record: www -> CloudFront (IPv6)
 resource "aws_route53_record" "www_ipv6" {
   zone_id = local.zone_id
   name    = "www.${var.domain_name}"
