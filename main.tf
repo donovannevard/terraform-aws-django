@@ -74,7 +74,7 @@ module "ec2" {
   subnet_id              = module.vpc.private_subnets[0]
   github_repo            = var.github_repo
 
-  ecr_repo_url           = module.ecr.repository_url
+  ecr_repo_url           = data.aws_ecr_repository.django.repository_url
   depends_on = [module.nat, module.security_groups]
 }
 
@@ -197,13 +197,17 @@ module "secrets" {
   depends_on = [module.rds]
 }
 
-# 12. ECR Repository
-module "ecr" {
-  source = "./modules/ecr"
+# # 12. ECR Repository
+# module "ecr" {
+#   source = "./modules/ecr"
 
-  repository_name         = var.ecr_repository_name != "" ? var.ecr_repository_name : var.project_name
-  image_tag_mutability    = var.ecr_image_tag_mutability
-  scan_on_push            = var.ecr_scan_on_push
-  project_name            = var.project_name
-  tags                    = var.tags
+#   repository_name         = var.ecr_repository_name
+#   image_tag_mutability    = var.ecr_image_tag_mutability
+#   scan_on_push            = var.ecr_scan_on_push
+#   project_name            = var.project_name
+#   tags                    = var.tags
+# }
+
+data "aws_ecr_repository" "django" {
+  name = var.ecr_repository_name
 }

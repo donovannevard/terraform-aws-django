@@ -56,12 +56,8 @@ resource "aws_launch_template" "app" {
     name = aws_iam_instance_profile.app.name
   }
 
-  # Remove key_name if using SSM (recommended)
-  # key_name = var.key_name
-
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    ecr_repo_url = var.ecr_repo_url
-    # Add any other env vars (secrets manager ARN, etc.)
+    ecr_repo_url = data.aws_ecr_repository.django.repository_url
   }))
 
   tag_specifications {

@@ -46,16 +46,6 @@ output "nat_public_ip" {
   value = module.nat.instance_public_ip
 }
 
-output "ecr_repository_url" {
-  description = "Full URL of the ECR repository (for Docker push/pull)"
-  value       = module.ecr.repository_url
-}
-
-output "ecr_repository_name" {
-  description = "Name of the ECR repository"
-  value       = module.ecr.repository_name
-}
-
 output "asg_name" {
   description = "Auto Scaling Group name"
   value       = module.ec2.asg_name
@@ -82,8 +72,6 @@ CI/CD Setup Instructions:
 
 1. In GitHub (your Django repo) → Settings → Secrets and variables → Actions:
    - Add Variables (not secrets):
-     ECR_REPO_NAME = ${module.ecr.repository_name}
-     ECR_REGISTRY   = ${module.ecr.registry_id}.dkr.ecr.${var.aws_region}.amazonaws.com
      AWS_REGION = ${var.aws_region}
 
    - Add Secrets:

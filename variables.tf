@@ -48,7 +48,6 @@ variable "nat_instance_type" {
 variable "ecr_repository_name" {
   description = "Name of the ECR repository (defaults to project_name if empty)"
   type        = string
-  default     = ""
 }
 
 variable "ecr_image_tag_mutability" {
