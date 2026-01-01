@@ -62,6 +62,9 @@ resource "aws_launch_template" "app" {
     DB_PASSWORD  = var.db_password
     DB_HOST      = var.db_host
     DB_NAME      = var.db_name
+    SECRET_KEY   = var.django_secret_key
+    AWS_STORAGE_BUCKET_NAME = var.aws_storage_bucket_name
+    AWS_S3_CUSTOM_DOMAIN    = var.aws_s3_custom_domain
   }))
 
   tag_specifications {

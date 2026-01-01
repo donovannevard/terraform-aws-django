@@ -52,3 +52,15 @@ variable "db_host" {
 variable "db_name" {
   type = string
 }
+
+variable "django_secret_key" {
+  type = string
+}
+
+variable "aws_storage_bucket_name" {
+  type = string
+}
+
+variable "aws_s3_custom_domain" {
+  type = string
+}

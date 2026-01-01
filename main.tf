@@ -82,6 +82,9 @@ module "ec2" {
   db_password = module.secrets.db_password
   db_host     = module.rds.endpoint
   db_name     = var.db_name
+  django_secret_key  = module.secrets.django_secret_key
+  aws_storage_bucket_name = module.s3_cloudfront.bucket_name
+  aws_s3_custom_domain    = var.domain_name
 
   ecr_repo_url           = data.aws_ecr_repository.django.repository_url
   depends_on = [module.nat, module.security_groups]
