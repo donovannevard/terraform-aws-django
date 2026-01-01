@@ -1,4 +1,4 @@
-# Certificate for ALB
+# Certificate for ALB (eu-west-2 default region)
 resource "aws_acm_certificate" "alb" {
   domain_name               = var.domain_name
   subject_alternative_names = var.alternative_names
@@ -14,21 +14,29 @@ resource "aws_acm_certificate" "alb" {
   }
 }
 
-# DNS validation record for ALB cert
+# DNS validation records for ALB cert
 resource "aws_route53_record" "alb_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.alb.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      type   = dvo.resource_record_type
+      record = dvo.resource_record_value
+    }
+  }
+
   zone_id = var.hosted_zone_id
-  name    = aws_acm_certificate.alb.domain_validation_options.0.resource_record_name
-  type    = aws_acm_certificate.alb.domain_validation_options.0.resource_record_type
-  records = [aws_acm_certificate.alb.domain_validation_options.0.resource_record_value]
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.record]
   ttl     = 60
 }
 
 resource "aws_acm_certificate_validation" "alb" {
   certificate_arn         = aws_acm_certificate.alb.arn
-  validation_record_fqdns = [aws_route53_record.alb_validation.fqdn]
+  validation_record_fqdns = [for record in aws_route53_record.alb_validation : record.fqdn]
 }
 
-# Certificate for CloudFront (us-east-1)
+# Certificate for CloudFront (must be in us-east-1)
 resource "aws_acm_certificate" "cloudfront" {
   provider = aws.us_east_1
 
@@ -46,12 +54,20 @@ resource "aws_acm_certificate" "cloudfront" {
   }
 }
 
-# DNS validation record for CloudFront cert
+# DNS validation records for CloudFront cert
 resource "aws_route53_record" "cloudfront_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.cloudfront.domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      type   = dvo.resource_record_type
+      record = dvo.resource_record_value
+    }
+  }
+
   zone_id = var.hosted_zone_id
-  name    = aws_acm_certificate.cloudfront.domain_validation_options.0.resource_record_name
-  type    = aws_acm_certificate.cloudfront.domain_validation_options.0.resource_record_type
-  records = [aws_acm_certificate.cloudfront.domain_validation_options.0.resource_record_value]
+  name    = each.value.name
+  type    = each.value.type
+  records = [each.value.record]
   ttl     = 60
 }
 
@@ -59,5 +75,5 @@ resource "aws_acm_certificate_validation" "cloudfront" {
   provider = aws.us_east_1
 
   certificate_arn         = aws_acm_certificate.cloudfront.arn
-  validation_record_fqdns = [aws_route53_record.cloudfront_validation.fqdn]
+  validation_record_fqdns = [for record in aws_route53_record.cloudfront_validation : record.fqdn]
 }

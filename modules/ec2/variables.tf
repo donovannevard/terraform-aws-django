@@ -33,5 +33,5 @@ variable "subnet_id" {
 variable "github_repo" {
   description = "GitHub repo for OIDC (e.g. username/repo)"
   type        = string
-  default     = "donovannevard/django-app"  # update to yours
+  default     = "donovannevard/donovannevard-django"
 }

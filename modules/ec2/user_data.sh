@@ -37,7 +37,11 @@ docker run -d \
   --name django-app \
   -p 8000:8000 \
   --restart unless-stopped \
-  "${ecr_repo_url}:latest"
+  -e DATABASE_URL="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME}" \
+  -e SECRET_KEY="${SECRET_KEY}" \  # optional, from secrets
+  -e AWS_STORAGE_BUCKET_NAME="${S3_BUCKET}" \
+  -e AWS_S3_CUSTOM_DOMAIN="${CLOUDFRONT_DOMAIN}" \
+  <your-ecr-repo-url>:latest
 
 # Quick health check
 sleep 10

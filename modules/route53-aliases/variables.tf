@@ -1,5 +1,5 @@
 variable "zone_id" {
-  description = "ID of the Route 53 hosted zone"
+  description = "ID of the Route 53 hosted zone (from route53_zone module)"
   type        = string
 }
 
@@ -9,20 +9,8 @@ variable "domain_name" {
 }
 
 variable "cloudfront_domain" {
-  description = "CloudFront distribution domain name (e.g. d123abc.cloudfront.net)"
+  description = "CloudFront distribution domain name"
   type        = string
-}
-
-variable "alb_dns_name" {
-  description = "DNS name of the ALB (optional fallback)"
-  type        = string
-  default     = ""
-}
-
-variable "alb_zone_id" {
-  description = "Hosted zone ID of the ALB (optional fallback)"
-  type        = string
-  default     = ""
 }
 
 variable "tags" {

@@ -1,17 +1,12 @@
-locals {
-  zone_id            = aws_route53_zone.this.zone_id
-  cloudfront_zone_id = "Z2FDTNDATAQYW2"  # Fixed global CloudFront zone ID
-}
-
 # A record: apex -> CloudFront
 resource "aws_route53_record" "apex" {
-  zone_id = local.zone_id
+  zone_id = var.zone_id
   name    = var.domain_name
   type    = "A"
 
   alias {
     name                   = var.cloudfront_domain
-    zone_id                = local.cloudfront_zone_id
+    zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
   }
 
@@ -22,13 +17,13 @@ resource "aws_route53_record" "apex" {
 
 # AAAA record: apex -> CloudFront
 resource "aws_route53_record" "apex_ipv6" {
-  zone_id = local.zone_id
+  zone_id = var.zone_id
   name    = var.domain_name
   type    = "AAAA"
 
   alias {
     name                   = var.cloudfront_domain
-    zone_id                = local.cloudfront_zone_id
+    zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
   }
 
@@ -39,13 +34,13 @@ resource "aws_route53_record" "apex_ipv6" {
 
 # A record: www -> CloudFront
 resource "aws_route53_record" "www" {
-  zone_id = local.zone_id
+  zone_id = var.zone_id
   name    = "www.${var.domain_name}"
   type    = "A"
 
   alias {
     name                   = var.cloudfront_domain
-    zone_id                = local.cloudfront_zone_id
+    zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
   }
 
@@ -56,13 +51,13 @@ resource "aws_route53_record" "www" {
 
 # AAAA record: www -> CloudFront
 resource "aws_route53_record" "www_ipv6" {
-  zone_id = local.zone_id
+  zone_id = var.zone_id
   name    = "www.${var.domain_name}"
   type    = "AAAA"
 
   alias {
     name                   = var.cloudfront_domain
-    zone_id                = local.cloudfront_zone_id
+    zone_id                = "Z2FDTNDATAQYW2"
     evaluate_target_health = false
   }
 
