@@ -57,7 +57,11 @@ resource "aws_launch_template" "app" {
   }
 
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    ecr_repo_url = data.aws_ecr_repository.django.repository_url
+    ecr_repo_url = var.ecr_repo_url
+    DB_USER      = var.db_user
+    DB_PASSWORD  = var.db_password
+    DB_HOST      = var.db_host
+    DB_NAME      = var.db_name
   }))
 
   tag_specifications {

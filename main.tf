@@ -16,6 +16,10 @@ data "aws_ssm_parameter" "amzn2_arm_ami" {
   name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2"
 }
 
+data "aws_ecr_repository" "django" {
+  name = var.ecr_repository_name
+}
+
 # === MODULE CALLS ===
 
 # 1. VPC with public/private subnets
@@ -73,6 +77,11 @@ module "ec2" {
   app_security_group_id  = module.security_groups.app_sg_id
   subnet_id              = module.vpc.private_subnets[0]
   github_repo            = var.github_repo
+
+  db_user     = module.secrets.db_username
+  db_password = module.secrets.db_password
+  db_host     = module.rds.endpoint
+  db_name     = var.db_name
 
   ecr_repo_url           = data.aws_ecr_repository.django.repository_url
   depends_on = [module.nat, module.security_groups]
@@ -195,19 +204,4 @@ module "secrets" {
   tags            = var.tags
 
   depends_on = [module.rds]
-}
-
-# # 12. ECR Repository
-# module "ecr" {
-#   source = "./modules/ecr"
-
-#   repository_name         = var.ecr_repository_name
-#   image_tag_mutability    = var.ecr_image_tag_mutability
-#   scan_on_push            = var.ecr_scan_on_push
-#   project_name            = var.project_name
-#   tags                    = var.tags
-# }
-
-data "aws_ecr_repository" "django" {
-  name = var.ecr_repository_name
 }

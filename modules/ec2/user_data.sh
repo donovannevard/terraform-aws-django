@@ -67,8 +67,8 @@ cat <<'EOC' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
   },
   "metrics": {
     "append_dimensions": {
-      "InstanceId": "${aws:InstanceId}",
-      "AutoScalingGroupName": "${aws:AutoScalingGroupName}"
+      "InstanceId": "$${aws:InstanceId}",
+      "AutoScalingGroupName": "$${aws:AutoScalingGroupName}"
     },
     "metrics_collected": {
       "cpu": {"measurement": ["cpu_usage_active"], "metrics_collection_interval": 60},
