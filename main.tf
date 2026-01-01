@@ -118,6 +118,7 @@ module "acm" {
   domain_name       = var.domain_name
   alternative_names = ["www.${var.domain_name}"]
   hosted_zone_id    = module.route53_zone.zone_id
+  cloudflare_zone_id = var.cloudflare_zone_id
 
   providers = {
     aws           = aws

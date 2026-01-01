@@ -4,6 +4,8 @@
 project_name       = "my-django-app"            # Used for naming resources
 domain_name        = "mydjangoapp.co.uk"        # Your custom domain
 ecr_repository_name = "mydjango-ecr-repo"
+cloudflare_api_token = "your-cloudflare-api-token-here"
+cloudflare_zone_id = "your-cloudflare-zone-id"
 
 app_instance_type  = "t4g.medium"               # Or t4g.small to save more
 nat_instance_type  = "t4g.nano"                 # Cheapest sufficient option

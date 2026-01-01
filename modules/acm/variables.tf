@@ -19,3 +19,7 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "cloudflare_zone_id" {
+  type = string
+}
