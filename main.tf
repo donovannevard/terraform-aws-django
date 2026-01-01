@@ -96,19 +96,14 @@ module "alb" {
 
   vpc_id            = module.vpc.vpc_id
   subnet_ids        = module.vpc.public_subnets
-  autoscaling_group_name  = module.ec2.asg_name
   project_name      = var.project_name
   domain_name       = var.domain_name
   tags              = var.tags
-
-  depends_on = [module.ec2, module.vpc]
-}
-
-resource "aws_autoscaling_attachment" "alb" {
   autoscaling_group_name = module.ec2.asg_name
-  lb_target_group_arn    = module.alb.target_group_arn
 
-  depends_on = [module.ec2, module.alb]
+  certificate_arn   = module.acm.alb_certificate_arn
+
+  depends_on = [module.ec2, module.acm, module.vpc]
 }
 
 # 6. ACM Certificate

@@ -32,9 +32,8 @@ variable "access_logs_bucket" {
 }
 
 variable "certificate_arn" {
-  description = "ARN of the ACM certificate for HTTPS listener (optional)"
+  description = "ACM certificate ARN for HTTPS listener"
   type        = string
-  default     = null
 }
 
 variable "autoscaling_group_name" {
