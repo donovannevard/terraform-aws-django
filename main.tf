@@ -1,10 +1,33 @@
 terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"   # Lock to latest stable major version (update as needed)
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+
   cloud {
     organization = "donovannevard-test"
     workspaces {
       name = "donovannevard-test-django"
     }
   }
+}
+
+# Providers – required for multi-region ACM (CloudFront needs us-east-1)
+provider "aws" {
+  region = "eu-west-2"   # Default for most resources (ALB, RDS, EC2, etc.)
+  # Add profile / assume_role / default_tags if you use them
+}
+
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+  # Copy any shared config (profile, assume_role, etc.) from above
 }
 
 # Data sources for availability zones and AMI lookups
@@ -66,7 +89,7 @@ module "nat" {
   depends_on       = [module.vpc]
 }
 
-# 4. Django App EC2 instance (now using ASG/launch template from earlier updates)
+# 4. Django App EC2 instance (now using ASG/launch template)
 module "ec2" {
   source = "./modules/ec2"
 
@@ -106,14 +129,14 @@ module "alb" {
   depends_on = [module.ec2, module.acm, module.vpc]
 }
 
-# 6. ACM Certificate
+# 6. ACM Certificate (EMAIL validation – manual confirmation required)
 module "acm" {
   source = "./modules/acm"
 
   domain_name       = var.domain_name
-  alternative_names = ["www.${var.domain_name}"]
+  alternative_names = ["www.${var.domain_name}", "static.${var.domain_name}"]   # Now includes static – good!
   hosted_zone_id    = module.route53_zone.zone_id
-  cloudflare_zone_id = var.cloudflare_zone_id
+  cloudflare_zone_id = var.cloudflare_zone_id   # If still needed; remove if unused
 
   providers = {
     aws           = aws
@@ -130,7 +153,7 @@ module "rds" {
   subnet_ids             = module.vpc.private_subnets
   db_security_group_id   = module.security_groups.db_sg_id
   db_name                = var.db_name
-  db_username            = var.db_username
+  db_username            = var.db_username   # Now donovannevard – fixed!
   instance_class         = var.db_instance_class
   allocated_storage      = var.db_allocated_storage
   multi_az               = var.enable_multi_az
@@ -148,7 +171,7 @@ module "s3_cloudfront" {
 
   bucket_name     = "${replace(var.domain_name, ".", "-")}-static-${random_id.bucket_suffix.hex}"
   domain_name     = var.domain_name
-  certificate_arn = module.acm.cloudfront_certificate_arn
+  certificate_arn = module.acm.cloudfront_certificate_arn   # Uses us-east-1 cert
   project_name    = var.project_name
   tags            = var.tags
 
@@ -159,7 +182,7 @@ resource "random_id" "bucket_suffix" {
   byte_length = 4
 }
 
-# 9. SES for transactional emails (order receipts, etc.)
+# 9. SES for transactional emails
 module "ses" {
   source = "./modules/ses"
 
