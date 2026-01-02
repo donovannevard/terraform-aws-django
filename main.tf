@@ -1,9 +1,5 @@
 terraform {
   required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"   # Lock to latest stable major version (update as needed)
-    }
     random = {
       source  = "hashicorp/random"
       version = "~> 3.0"
@@ -16,18 +12,6 @@ terraform {
       name = "donovannevard-test-django"
     }
   }
-}
-
-# Providers – required for multi-region ACM (CloudFront needs us-east-1)
-provider "aws" {
-  region = "eu-west-2"   # Default for most resources (ALB, RDS, EC2, etc.)
-  # Add profile / assume_role / default_tags if you use them
-}
-
-provider "aws" {
-  alias  = "us_east_1"
-  region = "us-east-1"
-  # Copy any shared config (profile, assume_role, etc.) from above
 }
 
 # Data sources for availability zones and AMI lookups
