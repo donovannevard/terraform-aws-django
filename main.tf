@@ -1,11 +1,4 @@
 terraform {
-  required_providers {
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
-  }
-
   cloud {
     organization = "donovannevard-test"
     workspaces {
@@ -155,7 +148,7 @@ module "s3_cloudfront" {
 
   bucket_name     = "${replace(var.domain_name, ".", "-")}-static-${random_id.bucket_suffix.hex}"
   domain_name     = var.domain_name
-  certificate_arn = module.acm.cloudfront_certificate_arn   # Uses us-east-1 cert
+  certificate_arn = module.acm.cloudfront_certificate_arn
   project_name    = var.project_name
   tags            = var.tags
 
